@@ -229,3 +229,39 @@ export const updateItem = (req, res) => {
         );
     });
 };
+
+export const moveItem = (req, res) => {
+    const token = req.cookies.access_token;
+
+    if (!token) {
+        res.status(200).json({ message: "Unauthorized!", error: true, errorCode: 1 });
+        return;
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, userInfo) => {
+        if (err) {
+            logout();
+        }
+
+        const query = "UPDATE items SET items_id_wishlist = ?  WHERE id_item = ?;";
+
+        const id_item = req.params.id_item;
+        const id_wishlist = req.params.id_wishlist;
+
+        db.query(query, [id_wishlist, id_item], (err, data) => {
+            if (err) {
+                console.log(err);
+                res.status(200).json({
+                    message: "Couldn't move your item!",
+                    error: true,
+                    errorCode: 2,
+                });
+                return;
+            }
+            res.status(200).json({
+                message: "Item moved successfully!",
+                error: false,
+            });
+        });
+    });
+};

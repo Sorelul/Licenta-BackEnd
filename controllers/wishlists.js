@@ -60,6 +60,38 @@ export const getWishlist = (req, res) => {
     });
 };
 
+export const getOwnedWishlist = (req, res) => {
+    const token = req.cookies.access_token;
+
+    if (!token) {
+        res.status(200).json({ message: "Unauthorized!", error: true, errorCode: 1 });
+        return;
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, userInfo) => {
+        if (err) {
+            return res.status(403).json("Token is not valid!");
+        }
+        const query = "SELECT * FROM wishlists WHERE wishlists_user_id = ? AND wishlists_i_got_this = 1";
+        const lastQuery = db.query(query, [userInfo.id], (err, data) => {
+            if (err) {
+                console.log(err);
+                res.status(200).json({
+                    message: "Couldn't get your list!",
+                    error: true,
+                    errorCode: 2,
+                });
+                return;
+            }
+            res.status(200).json({
+                message: "List retrieved successfully!",
+                error: false,
+                data: data,
+            });
+        });
+    });
+};
+
 export const addWishlist = (req, res) => {
     const token = req.cookies.access_token;
     if (!token) {
