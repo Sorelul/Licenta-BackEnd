@@ -1,9 +1,9 @@
 import express from "express";
-import { addGroup, inviteToGroup, joinGroup } from "../controllers/groups.js";
+import { addGroup, inviteToGroup, joinGroup, getGroups } from "../controllers/groups.js";
 
 const router = express.Router();
 
-// router.get("/all/:id_wishlist", getItems);
+router.get("/all/", getGroups);
 // router.get("/:id_item", getItem);
 router.post("/", addGroup);
 router.post("/invite/", inviteToGroup);
