@@ -1,5 +1,5 @@
 import express from "express";
-import { addGroup, inviteToGroup } from "../controllers/groups.js";
+import { addGroup, inviteToGroup, joinGroup } from "../controllers/groups.js";
 
 const router = express.Router();
 
@@ -7,6 +7,7 @@ const router = express.Router();
 // router.get("/:id_item", getItem);
 router.post("/", addGroup);
 router.post("/invite/", inviteToGroup);
+router.post("/join/", joinGroup);
 // router.delete("/:id_item", deleteItem);
 // router.put("/", updateItem);
 // router.put("/:id_item/:id_wishlist", moveItem);

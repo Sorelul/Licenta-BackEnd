@@ -228,6 +228,69 @@ export const inviteToGroup = (req, res) => {
     });
 };
 
+export const joinGroup = (req, res) => {
+    const token = req.cookies.access_token;
+
+    if (!token) {
+        res.status(200).json({ message: "Unauthorized!", error: true, errorCode: 1 });
+        return;
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded_token) => {
+        if (err) {
+            return res.status(403).json("Token is not valid!");
+        }
+        const { code } = req.body;
+        if (!code) {
+            res.status(200).json({ message: "The code is missing.", error: true, errorCode: 2 });
+            return;
+        }
+
+        db.query("SELECT * FROM users WHERE id_user = ?", [decoded_token.id], (err, data) => {
+            if (err) {
+                console.log(err);
+            } else {
+                if (data.length > 0) {
+                    const user_email = data[0].users_email;
+                    db.query(
+                        "SELECT * FROM `invitations` WHERE invitations_code = ? AND invitations_email = ?",
+                        [code, user_email],
+                        (err, data) => {
+                            if (err) {
+                                console.log(err);
+                                res.status(200).json({
+                                    message: "An error occurred while checking the invitation.",
+                                    error: true,
+                                    errorCode: 2,
+                                });
+                            } else {
+                                if (data.length > 0) {
+                                    //? Invitation found, add user to group
+                                    const groupId = data[0].invitations_group_id;
+                                    const id_invitation = data[0].id_invitation;
+                                    addUserToGroup(decoded_token.id, groupId, id_invitation);
+                                    res.status(200).json({
+                                        message: "User added to the group successfully!",
+                                        error: false,
+                                        id_group: groupId,
+                                    });
+                                } else {
+                                    //? Invitation not found
+                                    res.status(200).json({
+                                        message: "Invalid invitation code.",
+                                        error: true,
+                                        errorCode: 2,
+                                    });
+                                }
+                            }
+                        }
+                    );
+                }
+            }
+        });
+    });
+};
+
 //! ----------------------------------------------------------------
 //! Private Methods
 //! ----------------------------------------------------------------
@@ -303,7 +366,7 @@ const createCode = (length) => {
     return result;
 };
 
-const addUserToGroup = (id_user, id_group) => {
+const addUserToGroup = (id_user, id_group, id_invitation = null) => {
     const query = "INSERT INTO `correlation_group_user` (cgu_id_group,cgu_id_user) VALUES (?,?);";
     const error = {
         error: false,
@@ -315,7 +378,19 @@ const addUserToGroup = (id_user, id_group) => {
             error.error = true;
             error.message = err;
         }
+        if (id_invitation) {
+            deleteInvitation(id_invitation);
+        }
     });
 
     return error;
+};
+
+const deleteInvitation = (id_invitation) => {
+    const query = "DELETE FROM `invitations` WHERE id_invitation = ?";
+    db.query(query, [id_invitation], (err, data) => {
+        if (err) {
+            console.log(err);
+        }
+    });
 };
