@@ -49,6 +49,40 @@ export const addGroup = (req, res) => {
     });
 };
 
+export const getGroup = (req, res) => {
+    const token = req.cookies.access_token;
+
+    if (!token) {
+        res.status(200).json({ message: "Unauthorized!", error: true, errorCode: 1 });
+        return;
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, userInfo) => {
+        if (err) {
+            return res.status(403).json("Token is not valid!");
+        }
+
+        const query = "SELECT * FROM `groups` WHERE id_group = ?";
+
+        const id_group = req.params.id_group;
+
+        db.query(query, [id_group], (err, data) => {
+            if (err) {
+                res.status(200).json({
+                    message: "Couldn't get your group!",
+                    error: true,
+                    errorCode: 2,
+                });
+                return;
+            }
+            res.status(200).json({
+                message: "Group retrieved successfully!",
+                error: false,
+                data: data,
+            });
+        });
+    });
+};
 export const getGroups = (req, res) => {
     const token = req.cookies.access_token;
 
@@ -264,6 +298,111 @@ export const inviteToGroup = (req, res) => {
     });
 };
 
+export const sendEmailToGroupMembers = (req, res) => {
+    const token = req.cookies.access_token;
+
+    if (!token) {
+        res.status(200).json({ message: "Unauthorized!", error: true, errorCode: 1 });
+        return;
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded_token) => {
+        if (err) {
+            res.status(200).json({ message: "Unauthorized!", error: true, errorCode: 1 });
+            return;
+        }
+        const { emailContent, id_group, group_name } = req.body;
+        if (!emailContent || !id_group || !group_name) {
+            res.status(200).json({ message: "At least one field is missing", error: true, errorCode: 2 });
+            return;
+        }
+
+        //? Get all the members of the group
+
+        const query =
+            "SELECT id_user,users_username,users_email,`users_first-name`,`users_last-name`,`users_date_of_birth`,`users_profile_image`,`users_last_heartbeat` FROM `correlation_group_user` INNER JOIN `users` ON `correlation_group_user`.cgu_id_user = `users`.id_user WHERE cgu_id_group = ?";
+
+        db.query(query, [id_group], (err, data) => {
+            if (err) {
+                res.status(200).json({
+                    message: "Couldn't get group members!",
+                    error: true,
+                    errorCode: 2,
+                });
+                return;
+            }
+            const members = data;
+
+            //? Handle email sending
+
+            members.forEach((member) => {
+                const mailContent = `<!DOCTYPE html>
+            <html>
+            <head>
+              <title>Email from Group ${group_name} on Wishy</title>
+              <style>
+                /* CSS styles */
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.5;
+                    color: #333333;
+                  }
+              
+                  .container {
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                  }
+              
+                  h1 {
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin-bottom: 20px;
+                  }
+              
+                  p {
+                    margin-bottom: 10px;
+                  }
+              
+                  .button {
+                    display: inline-block;
+                    background-color: #007bff;
+                    color: #ffffff;
+                    padding: 10px 20px;
+                    text-decoration: none;
+                    border-radius: 4px;
+                  }
+              
+                  .button:hover {
+                    background-color: #0056b3;
+                  }
+              </style>
+            </head>
+            <body>
+            <div class="container">
+              <h1>${emailContent.emailSubject}</h1>
+              <p>${emailContent.emailBody}</p>
+            </div>
+          </body>
+            </html>`;
+                sendEmail(member.users_email, "Message from group " + group_name, mailContent)
+                    .then(() => {
+                        // All good
+                    })
+                    .catch((error) => {
+                        console.log(`Error sending email to ${member.users_email}: ${error}`);
+                    });
+            });
+        });
+
+        res.status(200).json({
+            message: "Emails sent successfully!",
+            error: false,
+        });
+    });
+};
+
+//! Join Group -----------------------------------------------------------------
 export const joinGroup = (req, res) => {
     const token = req.cookies.access_token;
 
@@ -323,6 +462,79 @@ export const joinGroup = (req, res) => {
                     );
                 }
             }
+        });
+    });
+};
+
+//! Get Members of group -------------------------------------------------------
+export const getGroupMembers = (req, res) => {
+    const token = req.cookies.access_token;
+
+    if (!token) {
+        res.status(200).json({ message: "Unauthorized!", error: true, errorCode: 1 });
+        return;
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, userInfo) => {
+        if (err) {
+            return res.status(403).json("Token is not valid!");
+        }
+
+        const query =
+            "SELECT id_user,users_username,users_email,`users_first-name`,`users_last-name`,`users_date_of_birth`,`users_profile_image`,`users_last_heartbeat` FROM `correlation_group_user` INNER JOIN `users` ON `correlation_group_user`.cgu_id_user = `users`.id_user WHERE cgu_id_group = ?";
+
+        const id_group = req.params.id_group;
+
+        db.query(query, [id_group], (err, data) => {
+            if (err) {
+                res.status(200).json({
+                    message: "Couldn't get group members!",
+                    error: true,
+                    errorCode: 2,
+                });
+                return;
+            }
+            res.status(200).json({
+                message: "Group members retrieved successfully!",
+                error: false,
+                data: data,
+            });
+        });
+    });
+};
+
+export const removeMember = (req, res) => {
+    const token = req.cookies.access_token;
+
+    if (!token) {
+        res.status(200).json({ message: "Unauthorized!", error: true, errorCode: 1 });
+        return;
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, userInfo) => {
+        if (err) {
+            return res.status(403).json("Token is not valid!");
+        }
+
+        const query = "DELETE FROM `correlation_group_user` WHERE cgu_id_group = ? AND cgu_id_user = ?";
+
+        const id_group = req.body.id_group;
+        const id_user = req.body.id_user;
+
+        db.query(query, [id_group, id_user], (err, data) => {
+            if (err) {
+                res.status(200).json({
+                    message: "Couldn't remove this members!",
+                    error: true,
+                    errorCode: 2,
+                });
+                return;
+            }
+            res.status(200).json({
+                message: "Member removed successfully!",
+                error: false,
+                data: data,
+            });
         });
     });
 };
