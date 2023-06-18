@@ -219,7 +219,7 @@ export const inviteToGroup = (req, res) => {
             .then((existingMembers) => {
                 //? Send notifications in app for every exiting user
                 if (existingMembers.length > 0) {
-                    const notif_errors = sendInviteNotifications(existingMembers, id_group, groupName);
+                    const notif_errors = sendInviteNotifications(existingMembers, groupName);
                     if (notif_errors.length > 0) {
                         res.status(200).json({
                             message: "Some errors occured while inviting members.",
@@ -613,7 +613,7 @@ const checkForExistingUsers = (members) => {
 const sendInviteNotifications = (members, groupName) => {
     const query =
         "INSERT INTO `notifications` (notifications_user_id,notifications_source,notifications_message,notifications_date) VALUES (?,?,?,?);";
-    const message = "You have been invited to join " + groupName;
+    const message = "You have been invited to join " + groupName + " <br/> Check your email for more informations.";
     const date = new Date();
     var errors = [];
     members.forEach((member) => {

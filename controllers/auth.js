@@ -98,4 +98,17 @@ const updateHeartbeat = (id_user) => {
     });
 };
 
-const createNewIGotThisList = (id_user) => {};
+const createNewIGotThisList = (id_user) => {
+    try {
+        var wishlists_added = new Date();
+        const query =
+            "INSERT INTO wishlists (wishlists_user_id, wishlists_name, wishlists_description,wishlists_added,wishlists_prefered_color,wishlists_i_got_this) VALUES (?,?,?,?,?,?)";
+        db.query(query, [id_user, "I Got this List", "", wishlists_added, "#4b77a6", "1"], (err, data) => {
+            if (err) {
+                console.log(err);
+            }
+        });
+    } catch (err) {
+        console.log(err);
+    }
+};
