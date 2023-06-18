@@ -4,6 +4,7 @@ import authRoutes from "./routes/authRoutes.js";
 import wishlistRoutes from "./routes/wishlistsRoutes.js";
 import itemRoutes from "./routes/itemsRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
+import notificationsRoutes from "./routes/notificationsRoutes.js";
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/item", itemRoutes);
 app.use("/api/group", groupRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 app.listen(8800, () => {
     console.log("Server running on port 8800");

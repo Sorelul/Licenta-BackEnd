@@ -8,6 +8,7 @@ import {
     getGroupMembers,
     removeMember,
     sendEmailToGroupMembers,
+    getGroupsForList,
 } from "../controllers/groups.js";
 
 const router = express.Router();
@@ -15,6 +16,7 @@ const router = express.Router();
 router.get("/all/", getGroups);
 router.get("/:id_group", getGroup);
 router.get("/members/:id_group", getGroupMembers);
+router.get("/groupsOfList/:id_wishlist", getGroupsForList);
 // router.get("/:id_item", getItem);
 router.post("/", addGroup);
 router.post("/sendGroupEmail", sendEmailToGroupMembers);

@@ -32,6 +32,8 @@ export const register = (req, res) => {
                 return res.json(err);
             }
             if (result.affectedRows) {
+                const id_user = result.insertId;
+                createNewIGotThisList(id_user);
                 return res.status(200).json("User created!");
             } else {
                 return res.status(500).json("Something went wrong!");
@@ -95,3 +97,5 @@ const updateHeartbeat = (id_user) => {
         return;
     });
 };
+
+const createNewIGotThisList = (id_user) => {};

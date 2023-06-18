@@ -119,6 +119,41 @@ export const getGroups = (req, res) => {
     });
 };
 
+export const getGroupsForList = (req, res) => {
+    const token = req.cookies.access_token;
+
+    if (!token) {
+        res.status(200).json({ message: "Unauthorized!", error: true, errorCode: 1 });
+        return;
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, userInfo) => {
+        if (err) {
+            return res.status(403).json("Token is not valid!");
+        }
+
+        const query = "SELECT cgl_id_group FROM `correlation_group_list` WHERE cgl_id_wishlist = ?";
+
+        const id_wishlist = req.params.id_wishlist;
+
+        db.query(query, [id_wishlist], (err, data) => {
+            if (err) {
+                res.status(200).json({
+                    message: "Couldn't get your groups!",
+                    error: true,
+                    errorCode: 2,
+                });
+                return;
+            }
+            res.status(200).json({
+                message: "Groups retrieved successfully!",
+                error: false,
+                data: data,
+            });
+        });
+    });
+};
+
 //! Invitations ----------------------------------------------------------------
 
 //? Create a Nodemailer transporter

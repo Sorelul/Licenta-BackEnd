@@ -179,6 +179,7 @@ export const updateWishlist = (req, res) => {
             wishlists_bought,
             wishlists_prefered_color,
             wishlists_privacy,
+            correlatedGroups,
         } = req.body;
 
         db.query(
@@ -202,11 +203,101 @@ export const updateWishlist = (req, res) => {
                     });
                     return;
                 }
-                res.status(200).json({
-                    message: "List updated successfully!",
-                    error: false,
-                });
+                updateCorrelationGroupList(id_wishlist, correlatedGroups)
+                    .then((result) => {
+                        const response = result;
+                        if (response == true) {
+                            res.status(200).json({
+                                message: "List updated successfully!",
+                                error: false,
+                            });
+                        } else {
+                            res.status(200).json({
+                                message: "There was an error updating the correlation between groups and lists.",
+                                error: true,
+                            });
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error:", error);
+                    });
             }
         );
     });
+};
+
+//! Private methods
+
+const updateCorrelationGroupList = async (id_wishlist, selectedGroups) => {
+    try {
+        // console.log("----------- Start -----------");
+        // console.log(id_wishlist, selectedGroups);
+        // 1. Get existing correlations for the specified list from the database
+        const existingCorrelations = await new Promise((resolve, reject) => {
+            db.query(
+                "SELECT * FROM `correlation_group_list` WHERE `cgl_id_wishlist` = ?",
+                [id_wishlist],
+                (error, results) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(results);
+                    }
+                }
+            );
+        });
+
+        // console.log("----------- Existing Correlations -----------");
+        // console.log(existingCorrelations);
+
+        // 2. Delete existing correlations not present in the selectedGroups array
+        const existingGroupIds = existingCorrelations.map((correlation) => correlation.cgl_id_group);
+        // console.log("----------- Existing Groups -----------");
+        // console.log(existingGroupIds);
+
+        const groupsToDelete = existingGroupIds.filter((cgl_id_group) => !selectedGroups.includes(cgl_id_group));
+        // console.log("----------- Groups to be Deleted -----------");
+        // console.log(groupsToDelete);
+
+        if (groupsToDelete.length > 0) {
+            new Promise((resolve, reject) => {
+                db.query(
+                    "DELETE FROM `correlation_group_list` WHERE `cgl_id_wishlist` = ? AND `cgl_id_group` IN (?)",
+                    [id_wishlist, groupsToDelete],
+                    (error, results) => {
+                        if (error) {
+                            reject(error);
+                        } else {
+                            resolve(results);
+                        }
+                    }
+                );
+            });
+        }
+
+        // 3. Insert new correlations for the selectedGroups array
+        const groupsToInsert = selectedGroups.filter((cgl_id_group) => !existingGroupIds.includes(cgl_id_group));
+
+        // console.log("----------- Groups to be Inserted -----------");
+        // console.log(groupsToInsert);
+
+        if (groupsToInsert.length > 0) {
+            const insertQuery = "INSERT INTO `correlation_group_list` (cgl_id_wishlist, cgl_id_group) VALUES ?";
+            const values = groupsToInsert.map((cgl_id_group) => [id_wishlist, cgl_id_group]);
+
+            new Promise((resolve, reject) => {
+                db.query(insertQuery, [values], (error, results) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(results);
+                    }
+                });
+            });
+        }
+        return true;
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
 };
