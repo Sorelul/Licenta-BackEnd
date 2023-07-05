@@ -27,6 +27,42 @@ export const getWishlists = (req, res) => {
     });
 };
 
+export const getWishlistsForUserFromGroup = (req, res) => {
+    const token = req.cookies.access_token;
+    if (!token) {
+        res.status(401).json({ message: "Unauthorized!", error: true });
+        return;
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, userInfo) => {
+        if (err) return res.status(403).json("Token is not valid!");
+
+        const query =
+            "SELECT * FROM correlation_group_list INNER JOIN `wishlists` ON `correlation_group_list`.cgl_id_wishlist = `wishlists`.id_wishlist WHERE wishlists_user_id = ? AND cgl_id_group = ?";
+
+        const wishlists_user_id = req.params.user;
+        const cgl_id_group = req.params.group;
+
+        db.query(query, [wishlists_user_id, cgl_id_group], (err, data) => {
+            if (err) {
+                console.log(err);
+                res.status(200).json({
+                    message: "Couldn't get your lists!",
+                    error: true,
+                    errorCode: 2,
+                });
+                return;
+            }
+
+            res.status(200).json({
+                message: "Lists retrieved successfully!",
+                error: false,
+                data: data,
+            });
+        });
+    });
+};
+
 export const getWishlist = (req, res) => {
     const token = req.cookies.access_token;
 
